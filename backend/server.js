@@ -12,6 +12,7 @@ const {
   listStores,
   createStore,
   toggleStoreStatus,
+  updateStore,
   deleteStore,
   getStoreBySlug,
   getStoreByCredentials,
@@ -1265,6 +1266,16 @@ app.post('/api/admin/stores', (req, res) => {
     }
     const result = createStore({ slug, name, owner_name, phone, username, password, notes });
     res.status(201).json({ success: true, message: 'تم إنشاء المتجر بنجاح وتجهيز قاعدة بياناته المستقلة', data: result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+app.put('/api/admin/stores/:id', (req, res) => {
+  try {
+    const { name, owner_name, phone, username, password, notes, status } = req.body;
+    updateStore(req.params.id, { name, owner_name, phone, username, password, notes, status });
+    res.json({ success: true, message: 'تم تحديث بيانات المتجر والمستخدم بنجاح' });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });
   }

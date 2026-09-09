@@ -300,6 +300,24 @@ function toggleStoreStatus(id, newStatus) {
   masterDb.prepare('UPDATE stores SET status = ? WHERE id = ?').run(newStatus, id);
 }
 
+function updateStore(id, { name, owner_name, phone, username, password, notes, status }) {
+  const fields = [];
+  const params = [];
+
+  if (name !== undefined) { fields.push('name = ?'); params.push(String(name).trim()); }
+  if (owner_name !== undefined) { fields.push('owner_name = ?'); params.push(String(owner_name).trim()); }
+  if (phone !== undefined) { fields.push('phone = ?'); params.push(String(phone).trim()); }
+  if (username !== undefined) { fields.push('username = ?'); params.push(String(username).trim()); }
+  if (password !== undefined && String(password).trim()) { fields.push('password = ?'); params.push(String(password).trim()); }
+  if (notes !== undefined) { fields.push('notes = ?'); params.push(String(notes).trim()); }
+  if (status !== undefined) { fields.push('status = ?'); params.push(status); }
+
+  if (fields.length === 0) return;
+
+  params.push(id);
+  masterDb.prepare(`UPDATE stores SET ${fields.join(', ')} WHERE id = ?`).run(...params);
+}
+
 function deleteStore(id) {
   const store = masterDb.prepare('SELECT slug FROM stores WHERE id = ?').get(id);
   if (store) {
@@ -339,6 +357,7 @@ module.exports = {
   listStores,
   createStore,
   toggleStoreStatus,
+  updateStore,
   deleteStore,
   getStoreBySlug,
   getStoreByCredentials,

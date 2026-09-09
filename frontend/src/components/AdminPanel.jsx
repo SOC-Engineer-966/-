@@ -17,7 +17,9 @@ import {
   ArrowRight,
   Sparkles,
   Calendar,
-  Layers
+  Layers,
+  Edit3,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { API_BASE, setActiveStoreSlug } from '../api';
 
@@ -51,6 +53,18 @@ export default function AdminPanel({ onExitAdmin }) {
 
   // Copied link state
   const [copiedSlug, setCopiedSlug] = useState(null);
+
+  // Edit Store & User Settings Modal
+  const [editingStore, setEditingStore] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editOwner, setEditOwner] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editStatus, setEditStatus] = useState('active');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
 
   useEffect(() => {
     const savedToken = localStorage.getItem('super_admin_token');
@@ -194,6 +208,50 @@ export default function AdminPanel({ onExitAdmin }) {
     window.location.href = `/?store=${slug}`;
   };
 
+  const openEditModal = (store) => {
+    setEditingStore(store);
+    setEditName(store.name || '');
+    setEditOwner(store.owner_name || '');
+    setEditPhone(store.phone || '');
+    setEditUsername(store.username || '');
+    setEditPassword(store.password || '');
+    setEditNotes(store.notes || '');
+    setEditStatus(store.status || 'active');
+    setEditError('');
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingStore) return;
+    setSavingEdit(true);
+    setEditError('');
+    try {
+      const res = await fetch(`${API_BASE}/admin/stores/${editingStore.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editName,
+          owner_name: editOwner,
+          phone: editPhone,
+          username: editUsername,
+          password: editPassword,
+          notes: editNotes,
+          status: editStatus
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'فشل تحديث البيانات');
+      }
+      setEditingStore(null);
+      loadStores();
+    } catch (err) {
+      setEditError(err.message);
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleChangeAdminPassword = async (e) => {
     e.preventDefault();
     setPasswordMsg('');
@@ -319,18 +377,10 @@ export default function AdminPanel({ onExitAdmin }) {
           </button>
 
           <button
-            onClick={onExitAdmin}
-            className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-slate-700"
-          >
-            <Store className="w-3.5 h-3.5" />
-            <span>المتجر الافتراضي</span>
-          </button>
-
-          <button
             onClick={handleLogout}
-            className="px-3 py-2.5 bg-rose-500/10 hover:bg-rose-500 text-rose-300 hover:text-white rounded-xl text-xs font-semibold transition border border-rose-500/30"
+            className="px-3.5 py-2.5 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-xl text-xs font-bold transition border border-rose-500/30"
           >
-            خروج
+            خروج المشرف
           </button>
         </div>
       </div>
@@ -480,11 +530,18 @@ export default function AdminPanel({ onExitAdmin }) {
                       </td>
 
                       <td className="p-4 text-center">
-                        <div className="flex items-center justify-center gap-2">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => openEditModal(store)}
+                            className="p-2 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition bg-slate-50 border border-slate-200"
+                            title="تعديل إعدادات المتجر وبيانات المستخدم"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
                           <button
                             onClick={() => handleOpenStore(store.slug)}
-                            className="p-2 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition"
-                            title="فتح ومعاينة هذا المتجر كمسؤول"
+                            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
+                            title="معاينة المتجر"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </button>
@@ -645,6 +702,157 @@ export default function AdminPanel({ onExitAdmin }) {
                 >
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>{creatingStore ? 'جاري التجهيز...' : 'إنشاء وتجهيز المتجر فوراً'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Edit Store & User Settings */}
+      {editingStore && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-5 border border-slate-200 animate-in fade-in zoom-in duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-emerald-600" />
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">إعدادات وتعديل المتجر والمستخدم</h3>
+                  <p className="text-[11px] text-slate-500 font-mono">الرمز: {editingStore.slug}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingStore(null)}
+                className="text-slate-400 hover:text-slate-700 text-lg font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {editError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  اسم المتجر / المحل <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    اسم صاحب المحل
+                  </label>
+                  <input
+                    type="text"
+                    value={editOwner}
+                    onChange={(e) => setEditOwner(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    رقم الهاتف (واتساب)
+                  </label>
+                  <input
+                    type="text"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800">
+                  <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>بيانات دخول المستخدم والعمال</span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      اسم المستخدم <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editUsername}
+                      onChange={(e) => setEditUsername(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      كلمة المرور الجديدة <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editPassword}
+                      onChange={(e) => setEditPassword(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    حالة المتجر
+                  </label>
+                  <select
+                    value={editStatus}
+                    onChange={(e) => setEditStatus(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="active">🟢 شغال ومفعل</option>
+                    <option value="suspended">🔴 موقوف ومجمد</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ملاحظات
+                  </label>
+                  <input
+                    type="text"
+                    value={editNotes}
+                    onChange={(e) => setEditNotes(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingStore(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  <span>{savingEdit ? 'جاري الحفظ...' : 'حفظ التعديلات'}</span>
                 </button>
               </div>
             </form>
