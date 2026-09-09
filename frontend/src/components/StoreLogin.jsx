@@ -119,17 +119,9 @@ export default function StoreLogin({ storeName = 'نظام المحاسب الذ
           </button>
         </form>
 
-        {/* Security Notice */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-          <span>النظام محمي ومقفل بالكامل 🔒</span>
-          {onOpenAdmin && (
-            <button
-              onClick={onOpenAdmin}
-              className="text-slate-400 hover:text-emerald-700 hover:underline transition font-bold"
-            >
-              دخول المشرف العام
-            </button>
-          )}
+        {/* Clean footer line */}
+        <div className="pt-2 border-t border-slate-100 text-center text-[11px] text-slate-400">
+          <span>جميع الحقوق محفوظة • نظام المحاسب الذكي</span>
         </div>
 
       </div>

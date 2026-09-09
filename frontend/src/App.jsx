@@ -83,8 +83,8 @@ export default function App() {
       });
   };
 
-  // If not logged in and not accessing admin, enforce login screen
-  if (!currentUser && activeTab !== 'admin') {
+  // If not logged in, enforce login screen for EVERYONE — no exceptions
+  if (!currentUser) {
     return (
       <StoreLogin 
         storeName={companyName}
@@ -97,7 +97,6 @@ export default function App() {
             setActiveTab('admin');
           }
         }}
-        onOpenAdmin={() => setActiveTab('admin')}
       />
     );
   }
