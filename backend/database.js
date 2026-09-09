@@ -1,4 +1,4 @@
-﻿const { DatabaseSync } = require('node:sqlite');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 const fs = require('fs');
 const { AsyncLocalStorage } = require('async_hooks');
@@ -317,7 +317,9 @@ function getStoreBySlug(slug) {
 }
 
 function getStoreByCredentials(username, password) {
-  return masterDb.prepare('SELECT id, slug, name, owner_name, phone, username, status FROM stores WHERE username = ? AND password = ?').get(username, password);
+  const cleanUser = String(username || '').trim();
+  const cleanPass = String(password || '').trim();
+  return masterDb.prepare('SELECT id, slug, name, owner_name, phone, username, status FROM stores WHERE LOWER(TRIM(username)) = LOWER(?) AND password = ?').get(cleanUser, cleanPass);
 }
 
 function verifyAdmin(username, password) {

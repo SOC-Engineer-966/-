@@ -266,22 +266,12 @@ export default function AdminPanel({ onExitAdmin }) {
             <button
               type="submit"
               disabled={loggingIn}
-              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-sm transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
             >
               <KeyRound className="w-4 h-4 text-emerald-400" />
               <span>{loggingIn ? 'جاري التحقق...' : 'دخول لوحة الإدارة'}</span>
             </button>
           </form>
-
-          <div className="text-center pt-2">
-            <button
-              onClick={onExitAdmin}
-              className="text-xs text-slate-500 hover:text-slate-800 transition flex items-center justify-center gap-1 mx-auto"
-            >
-              <ArrowRight className="w-3.5 h-3.5" />
-              <span>العودة للنظام</span>
-            </button>
-          </div>
         </div>
       </div>
     );

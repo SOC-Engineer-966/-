@@ -1289,18 +1289,54 @@ app.delete('/api/admin/stores/:id', (req, res) => {
   }
 });
 
-// Client store login
+// Client store & worker login
 app.post('/api/store/login', (req, res) => {
   try {
     const { username, password } = req.body;
-    const store = getStoreByCredentials(username, password);
+    if (!username || !password) {
+      return res.status(400).json({ success: false, error: 'يرجى كتابة اسم المستخدم وكلمة المرور' });
+    }
+
+    const cleanUser = String(username).trim();
+    const cleanPass = String(password).trim();
+
+    // Check if master admin
+    const adminUser = verifyAdmin(cleanUser, cleanPass);
+    if (adminUser) {
+      return res.json({
+        success: true,
+        role: 'admin',
+        user: { id: adminUser.id, username: adminUser.username, name: 'المشرف العام' }
+      });
+    }
+
+    // Check store credentials
+    const store = getStoreByCredentials(cleanUser, cleanPass);
     if (!store) {
       return res.status(401).json({ success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' });
     }
+
     if (store.status === 'suspended') {
-      return res.status(403).json({ success: false, error: 'عذراً، هذا الحساب معلق حالياً. يرجى مراجعة إدارة النظام للتفعيل.' });
+      return res.status(403).json({ 
+        success: false, 
+        is_suspended: true,
+        error: 'عذراً، هذا الحساب معلق ومجمد حالياً من قِبل إدارة النظام. يرجى مراجعة الإدارة للتفعيل.' 
+      });
     }
-    res.json({ success: true, data: store });
+
+    res.json({ 
+      success: true, 
+      role: 'store', 
+      user: {
+        id: store.id,
+        slug: store.slug,
+        name: store.name,
+        owner_name: store.owner_name,
+        phone: store.phone,
+        username: store.username,
+        status: store.status
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

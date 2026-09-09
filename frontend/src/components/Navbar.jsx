@@ -1,4 +1,3 @@
-﻿import React from 'react';
 import { 
   LayoutDashboard, 
   Package, 
@@ -7,10 +6,11 @@ import {
   BarChart3, 
   Settings,
   Boxes,
-  Users
+  Users,
+  LogOut
 } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab, companyName = 'نظام المحاسب الذكي' }) {
+export default function Navbar({ activeTab, setActiveTab, companyName = 'نظام المحاسب الذكي', currentUser, onLogout }) {
   const navItems = [
     { id: 'dashboard', label: 'لوحة التحكم', icon: LayoutDashboard },
     { id: 'inventory', label: 'المخزون والأصناف', icon: Package },
@@ -65,28 +65,60 @@ export default function Navbar({ activeTab, setActiveTab, companyName = 'نظا�
             })}
           </nav>
 
+          {/* Right Side / Logout Actions */}
+          {onLogout && (
+            <div className="hidden lg:flex items-center gap-3">
+              {currentUser && (
+                <div className="flex items-center gap-2 text-xs bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span className="font-bold text-slate-200">{currentUser.name || currentUser.username}</span>
+                </div>
+              )}
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-rose-300 hover:text-white bg-rose-950/50 hover:bg-rose-900/80 border border-rose-800/50 rounded-xl transition cursor-pointer shadow-sm"
+                title="تسجيل الخروج وقفل النظام"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>خروج</span>
+              </button>
+            </div>
+          )}
+
         </div>
 
         {/* Mobile Navigation Scrollable */}
-        <div className="lg:hidden flex items-center gap-1 overflow-x-auto py-2 border-t border-slate-800 no-scrollbar">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
-                  isActive 
-                    ? 'bg-emerald-600 text-white' 
-                    : 'text-slate-300 hover:bg-slate-800'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{item.label}</span>
-              </button>
-            );
-          })}
+        <div className="lg:hidden flex items-center justify-between gap-1 overflow-x-auto py-2 border-t border-slate-800 no-scrollbar">
+          <div className="flex items-center gap-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+                    isActive 
+                      ? 'bg-emerald-600 text-white' 
+                      : 'text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-rose-300 bg-rose-950/60 border border-rose-800/50 rounded-lg shrink-0 ml-1"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>خروج</span>
+            </button>
+          )}
         </div>
 
       </div>

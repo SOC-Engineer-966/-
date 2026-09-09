@@ -8,6 +8,7 @@ import Customers from './components/Customers';
 import Reports from './components/Reports';
 import Settings from './components/Settings';
 import AdminPanel from './components/AdminPanel';
+import StoreLogin from './components/StoreLogin';
 import { fetchApi, getActiveStoreSlug } from './api';
 import { AlertTriangle, ShieldAlert } from 'lucide-react';
 
@@ -19,6 +20,15 @@ export default function App() {
       }
     }
     return 'dashboard';
+  });
+
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('al_muhasib_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
   });
 
   const [companyName, setCompanyName] = useState('نظام المحاسب الذكي');
@@ -73,6 +83,25 @@ export default function App() {
       });
   };
 
+  // If not logged in and not accessing admin, enforce login screen
+  if (!currentUser && activeTab !== 'admin') {
+    return (
+      <StoreLogin 
+        storeName={companyName}
+        onLoginSuccess={(user, role) => {
+          try {
+            localStorage.setItem('al_muhasib_user', JSON.stringify(user));
+          } catch {}
+          setCurrentUser(user);
+          if (role === 'admin') {
+            setActiveTab('admin');
+          }
+        }}
+        onOpenAdmin={() => setActiveTab('admin')}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans" dir="rtl">
       {/* Top Navbar */}
@@ -80,6 +109,12 @@ export default function App() {
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         companyName={companyName}
+        currentUser={currentUser}
+        onLogout={() => {
+          localStorage.removeItem('al_muhasib_user');
+          setCurrentUser(null);
+          setActiveTab('dashboard');
+        }}
       />
 
       {/* Main Container */}
