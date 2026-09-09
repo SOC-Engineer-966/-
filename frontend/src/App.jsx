@@ -13,17 +13,20 @@ import { fetchApi, getActiveStoreSlug } from './api';
 import { AlertTriangle, ShieldAlert } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window !== 'undefined') {
-      if (window.location.hash === '#admin' || new URLSearchParams(window.location.search).get('admin') === 'true') {
-        return 'admin';
-      }
-    }
-    return 'dashboard';
-  });
+  const SESSION_VERSION = 'v2'; // bump this to force all users to re-login
+
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   const [currentUser, setCurrentUser] = useState(() => {
     try {
+      const ver = localStorage.getItem('al_muhasib_session_ver');
+      if (ver !== SESSION_VERSION) {
+        // Old session from before login system — clear it
+        localStorage.removeItem('al_muhasib_user');
+        localStorage.removeItem('super_admin_token');
+        localStorage.removeItem('al_muhasib_session_ver');
+        return null;
+      }
       const saved = localStorage.getItem('al_muhasib_user');
       return saved ? JSON.parse(saved) : null;
     } catch {
@@ -91,6 +94,7 @@ export default function App() {
         onLoginSuccess={(user, role) => {
           try {
             localStorage.setItem('al_muhasib_user', JSON.stringify(user));
+            localStorage.setItem('al_muhasib_session_ver', SESSION_VERSION);
           } catch {}
           setCurrentUser(user);
           if (role === 'admin') {
@@ -111,6 +115,8 @@ export default function App() {
         currentUser={currentUser}
         onLogout={() => {
           localStorage.removeItem('al_muhasib_user');
+          localStorage.removeItem('al_muhasib_session_ver');
+          localStorage.removeItem('super_admin_token');
           setCurrentUser(null);
           setActiveTab('dashboard');
         }}
