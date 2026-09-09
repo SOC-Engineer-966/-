@@ -97,6 +97,26 @@ export default function App() {
       });
   };
 
+  const [previewingStore, setPreviewingStore] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const storeParam = new URLSearchParams(window.location.search).get('store');
+      return storeParam ? { slug: storeParam.toLowerCase().trim(), name: storeParam } : null;
+    }
+    return null;
+  });
+
+  const handlePreviewStore = (slug, name) => {
+    setActiveStoreSlug(slug);
+    setPreviewingStore({ slug, name: name || slug });
+    window.history.replaceState({}, '', `/?store=${slug}`);
+  };
+
+  const handleExitPreview = () => {
+    setPreviewingStore(null);
+    setActiveStoreSlug('default');
+    window.history.replaceState({}, '', '/');
+  };
+
   // 1. If not logged in, enforce login screen for EVERYONE — no exceptions
   if (!currentUser) {
     return (
@@ -117,24 +137,85 @@ export default function App() {
     );
   }
 
-  // 2. If user is Super Admin, show ONLY the Admin Panel (No store navbar, no inventory, no audits)
+  // 2. If user is Super Admin in preview mode for a specific client store
+  if (currentUser.role === 'admin' && previewingStore) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-800" dir="rtl">
+        {/* Admin Preview Header Banner */}
+        <div className="bg-emerald-700 text-white px-4 py-2.5 shadow-md flex items-center justify-between sticky top-0 z-50">
+          <div className="flex items-center gap-2.5 text-xs sm:text-sm font-bold">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse"></span>
+            <span>أنت الآن في وضع معاينة متجر: <strong className="text-amber-200 underline decoration-amber-300">{previewingStore.name || previewingStore.slug}</strong></span>
+          </div>
+          <button
+            onClick={handleExitPreview}
+            className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-xl text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+          >
+            <span>العودة للوحة تحكم المشرف</span>
+            <span>↩</span>
+          </button>
+        </div>
+
+        {/* Top Store Navbar */}
+        <Navbar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          companyName={companyName}
+          currentUser={currentUser}
+          onLogout={handleLogout}
+        />
+
+        {/* Main Store Content in Preview Mode */}
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12">
+          {activeTab === 'dashboard' && <Dashboard setActiveTab={setActiveTab} />}
+          {activeTab === 'inventory' && <Inventory />}
+          {activeTab === 'audits' && <Audits />}
+          {activeTab === 'sales' && <SalesLogging />}
+          {activeTab === 'customers' && <Customers />}
+          {activeTab === 'reports' && <Reports />}
+          {activeTab === 'settings' && (
+            <Settings 
+              onUpdateCompany={(name) => setCompanyName(name)} 
+            />
+          )}
+        </main>
+
+        <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>وضع معاينة متجر العميل • نظام المحاسب الذكي</span>
+            <div className="flex items-center gap-3">
+              <span className="font-bold text-slate-700">
+                تطوير وبرمجة: <span className="text-emerald-700 font-extrabold">عبد الرحمن كمال</span>
+              </span>
+              <span className="text-slate-300">|</span>
+              <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                v2.0
+              </span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  // 3. If user is Super Admin in main portal (Clean Light Gray Background, No Store Navbar)
   if (currentUser.role === 'admin') {
     return (
-      <div className="min-h-screen bg-slate-900 flex flex-col font-sans" dir="rtl">
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
-          <AdminPanel onExitAdmin={handleLogout} />
+      <div className="min-h-screen bg-slate-100 flex flex-col font-sans text-slate-800" dir="rtl">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-12">
+          <AdminPanel onExitAdmin={handleLogout} onPreviewStore={handlePreviewStore} />
         </main>
 
         {/* Admin Footer */}
-        <footer className="bg-slate-950 border-t border-slate-800 py-4 text-center text-xs text-slate-400">
+        <footer className="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-500">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>لوحة تحكم المشرف العام المركزية • إدارة حسابات المتاجر والعملاء المشتركين فقط</span>
             <div className="flex items-center gap-3">
-              <span className="text-slate-400">
-                تطوير وبرمجة: <span className="text-emerald-400 font-extrabold">م. عبد الرحمن كمال</span>
+              <span className="font-bold text-slate-700">
+                تطوير وبرمجة: <span className="text-emerald-700 font-extrabold">م. عبد الرحمن كمال</span>
               </span>
-              <span className="text-slate-600">|</span>
-              <span className="font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+              <span className="text-slate-300">|</span>
+              <span className="font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                 v2.0
               </span>
             </div>

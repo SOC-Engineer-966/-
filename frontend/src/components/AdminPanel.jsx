@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { API_BASE, setActiveStoreSlug } from '../api';
 
-export default function AdminPanel({ onExitAdmin }) {
+export default function AdminPanel({ onExitAdmin, onPreviewStore }) {
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
     return Boolean(localStorage.getItem('super_admin_token'));
   });
@@ -100,6 +100,7 @@ export default function AdminPanel({ onExitAdmin }) {
     localStorage.removeItem('super_admin_token');
     setIsAdminLoggedIn(false);
     setLoginPassword('');
+    if (onExitAdmin) onExitAdmin();
   };
 
   const loadStores = async () => {
@@ -108,7 +109,7 @@ export default function AdminPanel({ onExitAdmin }) {
       const res = await fetch(`${API_BASE}/admin/stores`);
       const data = await res.json();
       if (data.success) {
-        setStores(data.data);
+        setStores(data.data || []);
       }
     } catch (err) {
       console.error(err);
@@ -196,14 +197,31 @@ export default function AdminPanel({ onExitAdmin }) {
   const handleCopyLink = (slug) => {
     const origin = window.location.origin;
     const url = `${origin}/?store=${slug}`;
-    navigator.clipboard.writeText(url);
-    setCopiedSlug(slug);
-    setTimeout(() => setCopiedSlug(null), 3000);
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+      setCopiedSlug(slug);
+      setTimeout(() => setCopiedSlug(null), 3000);
+    } catch {
+      prompt('انسخ الرابط التالي وأرسله للعميل:', url);
+    }
   };
 
-  const handleOpenStore = (slug) => {
-    setActiveStoreSlug(slug);
-    window.location.href = `/?store=${slug}`;
+  const handleOpenStore = (slug, name) => {
+    if (onPreviewStore) {
+      onPreviewStore(slug, name);
+    } else {
+      setActiveStoreSlug(slug);
+      window.location.href = `/?store=${slug}`;
+    }
   };
 
   const openEditModal = (store) => {
@@ -338,21 +356,21 @@ export default function AdminPanel({ onExitAdmin }) {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Admin Header Bar */}
-      <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-800">
+      {/* Admin Header Bar - Clean White Theme */}
+      <div className="bg-white text-slate-800 p-6 rounded-3xl shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border border-slate-200">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center shadow-lg border border-emerald-400/30">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 flex items-center justify-center shadow-md text-white border border-emerald-400/30">
             <ShieldCheck className="w-8 h-8 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-black">لوحة التحكم المركزية (المشرف العام)</h1>
-              <span className="bg-emerald-500/20 text-emerald-300 text-xs px-2.5 py-0.5 rounded-full font-bold border border-emerald-500/30">
+              <h1 className="text-2xl font-black text-slate-900">لوحة التحكم المركزية (المشرف العام)</h1>
+              <span className="bg-emerald-50 text-emerald-700 text-xs px-2.5 py-0.5 rounded-full font-bold border border-emerald-200">
                 Super Admin
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
-              إنشاء وإدارة حسابات المتاجر المستقلة لجميع المشترين، والتحكم بصلاحياتهم وروابطهم
+            <p className="text-xs text-slate-500 mt-0.5">
+              إنشاء وإدارة حسابات المتاجر والعملاء المشتركين، والتحكم بصلاحياتهم وروابطهم
             </p>
           </div>
         </div>
@@ -360,7 +378,7 @@ export default function AdminPanel({ onExitAdmin }) {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-md"
+            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>إضافة متجر / عميل جديد</span>
@@ -368,7 +386,7 @@ export default function AdminPanel({ onExitAdmin }) {
 
           <button
             onClick={() => setShowPasswordModal(true)}
-            className="px-3 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-slate-700"
+            className="px-3 py-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-700 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 border border-slate-200 cursor-pointer"
           >
             <KeyRound className="w-3.5 h-3.5" />
             <span>تغيير كلمة مروري</span>
@@ -376,7 +394,7 @@ export default function AdminPanel({ onExitAdmin }) {
 
           <button
             onClick={handleLogout}
-            className="px-3.5 py-2.5 bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white rounded-xl text-xs font-bold transition border border-rose-500/30"
+            className="px-3.5 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition border border-rose-200 cursor-pointer shadow-sm"
           >
             خروج المشرف
           </button>
@@ -458,8 +476,16 @@ export default function AdminPanel({ onExitAdmin }) {
                   return (
                     <tr key={store.id} className="hover:bg-slate-50/80 transition">
                       <td className="p-4">
-                        <div className="font-black text-sm text-slate-900">{store.name}</div>
-                        <span className="font-mono text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenStore(store.slug, store.name)}
+                          className="font-black text-sm text-slate-900 hover:text-emerald-700 hover:underline transition text-right cursor-pointer flex items-center gap-1.5"
+                          title="اضغط لفتح ومعاينة هذا المتجر"
+                        >
+                          <span>{store.name}</span>
+                          <ExternalLink className="w-3.5 h-3.5 text-emerald-600 inline" />
+                        </button>
+                        <span className="font-mono text-[11px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 mt-1 inline-block">
                           slug: {store.slug}
                         </span>
                         {store.notes && (
@@ -507,11 +533,12 @@ export default function AdminPanel({ onExitAdmin }) {
                       <td className="p-4 text-center">
                         <button
                           onClick={() => handleCopyLink(store.slug)}
-                          className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 mx-auto ${
+                          className={`px-3 py-1.5 rounded-xl font-bold text-xs transition flex items-center gap-1.5 mx-auto cursor-pointer ${
                             isCopied
                               ? 'bg-emerald-600 text-white'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                           }`}
+                          title="نسخ رابط هذا المتجر لإرساله للعميل"
                         >
                           {isCopied ? (
                             <>
@@ -531,21 +558,21 @@ export default function AdminPanel({ onExitAdmin }) {
                         <div className="flex items-center justify-center gap-1.5">
                           <button
                             onClick={() => openEditModal(store)}
-                            className="p-2 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition bg-slate-50 border border-slate-200"
+                            className="p-2 text-slate-700 hover:text-emerald-700 hover:bg-emerald-50 rounded-xl transition bg-slate-50 border border-slate-200 cursor-pointer"
                             title="تعديل إعدادات المتجر وبيانات المستخدم"
                           >
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleOpenStore(store.slug)}
-                            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition"
-                            title="معاينة المتجر"
+                            onClick={() => handleOpenStore(store.slug, store.name)}
+                            className="p-2 text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition border border-emerald-200 cursor-pointer"
+                            title="دخول ومعاينة متجر العميل"
                           >
                             <ExternalLink className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteStore(store.id, store.name)}
-                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition"
+                            className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition cursor-pointer"
                             title="حذف المتجر"
                           >
                             <Trash2 className="w-4 h-4" />
