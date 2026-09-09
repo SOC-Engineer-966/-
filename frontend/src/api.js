@@ -1,4 +1,4 @@
-﻿// Dynamic API base URL: works locally, on LAN IP, or when served from backend
+// Dynamic API base URL: works locally, on LAN IP, or when served from backend
 const isDev = import.meta.env.DEV;
 export const API_BASE = isDev 
   ? `http://${window.location.hostname}:5000/api` 
@@ -43,6 +43,9 @@ export async function fetchApi(endpoint, options = {}) {
     const error = new Error(data.error || 'حدث خطأ أثناء معالجة الطلب');
     if (data.is_suspended || response.status === 403) {
       error.isSuspended = true;
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('store-suspended', { detail: data.error }));
+      }
     }
     throw error;
   }

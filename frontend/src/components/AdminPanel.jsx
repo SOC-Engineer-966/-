@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShieldCheck, 
   Store, 
@@ -450,15 +450,15 @@ export default function AdminPanel({ onExitAdmin }) {
                       <td className="p-4">
                         <button
                           onClick={() => handleToggleStatus(store.id, store.status)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition ${
+                          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black shadow-sm transition border ${
                             isActive
-                              ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                              : 'bg-rose-100 text-rose-800 hover:bg-rose-200'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
+                              : 'bg-rose-50 text-rose-700 border-rose-300 hover:bg-emerald-50 hover:text-emerald-700 hover:border-emerald-300'
                           }`}
-                          title="اضغط لتغيير الحالة (تفعيل / إيقاف)"
+                          title={isActive ? "اضغط لتجميد وإيقاف المتجر عن العمال فوراً" : "اضغط لإلغاء التجميد وتفعيل المتجر للعمال"}
                         >
-                          <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                          <span>{isActive ? 'نشط (مفعل)' : 'معلق (موقوف)'}</span>
+                          <span className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                          <span>{isActive ? '🟢 شغال ومفعل (اضغط للتجميد)' : '🔴 موقوف ومغلق (اضغط للتشغيل)'}</span>
                         </button>
                       </td>
 

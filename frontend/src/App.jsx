@@ -25,19 +25,53 @@ export default function App() {
   const [isStoreSuspended, setIsStoreSuspended] = useState(false);
 
   useEffect(() => {
+    const checkStatus = () => {
+      fetchApi('/settings')
+        .then(res => {
+          if (res.data?.company_name) {
+            setCompanyName(res.data.company_name);
+          }
+          setIsStoreSuspended(false);
+        })
+        .catch(err => {
+          if (err.isSuspended) {
+            setIsStoreSuspended(true);
+          }
+        });
+    };
+
+    // Initial check
+    checkStatus();
+
+    // Periodic heartbeat every 10 seconds to detect admin suspension/activation in real-time
+    const interval = setInterval(checkStatus, 10000);
+
+    // Immediate event listener
+    const onSuspended = () => {
+      setIsStoreSuspended(true);
+    };
+    window.addEventListener('store-suspended', onSuspended);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('store-suspended', onSuspended);
+    };
+  }, []);
+
+  const handleRefreshStatus = () => {
     fetchApi('/settings')
-      .then(res => {
-        if (res.data?.company_name) {
-          setCompanyName(res.data.company_name);
-        }
+      .then(() => {
+        setIsStoreSuspended(false);
+        window.location.reload();
       })
       .catch(err => {
         if (err.isSuspended) {
-          setIsStoreSuspended(true);
+          alert('ما زال الحساب موقوفاً من قِبل المشرف العام. يرجى مراجعته للتفعيل.');
+        } else {
+          alert('خطأ أثناء فحص الحالة: ' + err.message);
         }
-        console.error(err);
       });
-  }, []);
+  };
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans" dir="rtl">
@@ -50,24 +84,28 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {isStoreSuspended ? (
-          <div className="max-w-lg mx-auto my-12 bg-white rounded-3xl p-8 border border-rose-200 shadow-xl text-center space-y-4">
-            <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl mx-auto flex items-center justify-center">
-              <ShieldAlert className="w-8 h-8" />
+        {isStoreSuspended && activeTab !== 'admin' ? (
+          <div className="max-w-lg mx-auto my-14 bg-white rounded-3xl p-8 border-2 border-rose-300 shadow-2xl text-center space-y-5 animate-in fade-in zoom-in duration-200">
+            <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-3xl mx-auto flex items-center justify-center shadow-inner">
+              <ShieldAlert className="w-10 h-10 animate-bounce" />
             </div>
-            <h2 className="text-xl font-black text-slate-900">عذراً، هذا المتجر معلق حالياً</h2>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              تم إيقاف صلاحية الوصول لهذا الحساب مؤقتاً من قِبل إدارة النظام. يرجى التواصل مع مالك المنصة لإعادة التفعيل.
-            </p>
-            <button
-              onClick={() => {
-                localStorage.removeItem('al_muhasib_store');
-                window.location.href = '/';
-              }}
-              className="px-5 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl transition"
-            >
-              العودة للمتجر الرئيسي
-            </button>
+            <div className="space-y-2">
+              <h2 className="text-2xl font-black text-rose-700">🔒 تم إيقاف وتجميد هذا الحساب</h2>
+              <p className="text-sm font-bold text-slate-800">
+                صلاحية استخدام النظام متوقفة حالياً بقرار من إدارة النظام.
+              </p>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+                لا يمكن للعمال أو المستخدمين تسجيل مبيعات، أو جرد مخزون، أو فتح أي صفحة حتى يقوم المشرف العام بإعادة تفعيل المتجر من لوحة التحكم.
+              </p>
+            </div>
+            <div className="pt-2 flex flex-col gap-2.5">
+              <button
+                onClick={handleRefreshStatus}
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+              >
+                <span>🔄 فحص حالة التفعيل الآن</span>
+              </button>
+            </div>
           </div>
         ) : (
           <>
