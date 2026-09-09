@@ -12,9 +12,9 @@ export default function Settings({ onUpdateCompany }) {
   const [settings, setSettings] = useState({
     company_name: '',
     currency: 'ر.س',
-    enable_vat: 'true',
-    vat_rate: '15',
-    address: '',
+    enable_vat: 'false',
+    vat_rate: '0',
+    address: 'اليمن - عدن',
     phone: ''
   });
   const [saving, setSaving] = useState(false);
@@ -117,7 +117,7 @@ export default function Settings({ onUpdateCompany }) {
                 onChange={(e) => setSettings({ ...settings, enable_vat: e.target.checked ? 'true' : 'false' })}
                 className="w-4 h-4 text-emerald-600 rounded"
               />
-              <span>تفعيل احتساب الضريبة (15%) في الفواتير وحاسبة الأسعار</span>
+              <span>تفعيل احتساب الضريبة في الفواتير (افتراضياً 0% معفي من الضريبة)</span>
             </label>
           </div>
 
