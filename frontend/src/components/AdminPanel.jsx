@@ -24,7 +24,9 @@ import {
 import { API_BASE, setActiveStoreSlug } from '../api';
 
 export default function AdminPanel({ onExitAdmin }) {
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(() => {
+    return Boolean(localStorage.getItem('super_admin_token'));
+  });
   const [loginUsername, setLoginUsername] = useState('admin');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -67,11 +69,7 @@ export default function AdminPanel({ onExitAdmin }) {
   const [editError, setEditError] = useState('');
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('super_admin_token');
-    if (savedToken) {
-      setIsAdminLoggedIn(true);
-      loadStores();
-    }
+    loadStores();
   }, []);
 
   const handleAdminLogin = async (e) => {

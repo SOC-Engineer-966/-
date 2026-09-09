@@ -1317,7 +1317,13 @@ app.post('/api/store/login', (req, res) => {
       return res.json({
         success: true,
         role: 'admin',
-        user: { id: adminUser.id, username: adminUser.username, name: 'المشرف العام' }
+        token: 'super-admin-auth-token',
+        user: { 
+          id: adminUser.id, 
+          username: adminUser.username, 
+          name: 'المشرف العام',
+          role: 'admin'
+        }
       });
     }
 
@@ -1345,7 +1351,8 @@ app.post('/api/store/login', (req, res) => {
         owner_name: store.owner_name,
         phone: store.phone,
         username: store.username,
-        status: store.status
+        status: store.status,
+        role: 'store'
       }
     });
   } catch (err) {

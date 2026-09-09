@@ -37,7 +37,18 @@ export default function App() {
   const [companyName, setCompanyName] = useState('نظام المحاسب الذكي');
   const [isStoreSuspended, setIsStoreSuspended] = useState(false);
 
+  const handleLogout = () => {
+    localStorage.removeItem('al_muhasib_user');
+    localStorage.removeItem('al_muhasib_session_ver');
+    localStorage.removeItem('super_admin_token');
+    setCurrentUser(null);
+    setActiveTab('dashboard');
+  };
+
   useEffect(() => {
+    // If not logged in or if user is admin, don't poll store settings
+    if (!currentUser || currentUser.role === 'admin') return;
+
     const checkStatus = () => {
       fetchApi('/settings')
         .then(res => {
@@ -69,7 +80,7 @@ export default function App() {
       clearInterval(interval);
       window.removeEventListener('store-suspended', onSuspended);
     };
-  }, []);
+  }, [currentUser]);
 
   const handleRefreshStatus = () => {
     fetchApi('/settings')
@@ -86,45 +97,68 @@ export default function App() {
       });
   };
 
-  // If not logged in, enforce login screen for EVERYONE — no exceptions
+  // 1. If not logged in, enforce login screen for EVERYONE — no exceptions
   if (!currentUser) {
     return (
       <StoreLogin 
         storeName={companyName}
-        onLoginSuccess={(user, role) => {
+        onLoginSuccess={(user, role, token) => {
+          const userWithRole = { ...user, role };
           try {
-            localStorage.setItem('al_muhasib_user', JSON.stringify(user));
+            localStorage.setItem('al_muhasib_user', JSON.stringify(userWithRole));
             localStorage.setItem('al_muhasib_session_ver', SESSION_VERSION);
+            if (role === 'admin') {
+              localStorage.setItem('super_admin_token', token || 'super-admin-auth-token');
+            }
           } catch {}
-          setCurrentUser(user);
-          if (role === 'admin') {
-            setActiveTab('admin');
-          }
+          setCurrentUser(userWithRole);
         }}
       />
     );
   }
 
+  // 2. If user is Super Admin, show ONLY the Admin Panel (No store navbar, no inventory, no audits)
+  if (currentUser.role === 'admin') {
+    return (
+      <div className="min-h-screen bg-slate-900 flex flex-col font-sans" dir="rtl">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-12">
+          <AdminPanel onExitAdmin={handleLogout} />
+        </main>
+
+        {/* Admin Footer */}
+        <footer className="bg-slate-950 border-t border-slate-800 py-4 text-center text-xs text-slate-400">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <span>لوحة تحكم المشرف العام المركزية • إدارة حسابات المتاجر والعملاء المشتركين فقط</span>
+            <div className="flex items-center gap-3">
+              <span className="text-slate-400">
+                تطوير وبرمجة: <span className="text-emerald-400 font-extrabold">م. عبد الرحمن كمال</span>
+              </span>
+              <span className="text-slate-600">|</span>
+              <span className="font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800">
+                v2.0
+              </span>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
+  // 3. Client store & worker view (has store navbar, inventory, audits, sales, customers, reports, settings)
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col font-sans" dir="rtl">
-      {/* Top Navbar */}
+      {/* Top Store Navbar */}
       <Navbar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         companyName={companyName}
         currentUser={currentUser}
-        onLogout={() => {
-          localStorage.removeItem('al_muhasib_user');
-          localStorage.removeItem('al_muhasib_session_ver');
-          localStorage.removeItem('super_admin_token');
-          setCurrentUser(null);
-          setActiveTab('dashboard');
-        }}
+        onLogout={handleLogout}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {isStoreSuspended && activeTab !== 'admin' ? (
+        {isStoreSuspended ? (
           <div className="max-w-lg mx-auto my-14 bg-white rounded-3xl p-8 border-2 border-rose-300 shadow-2xl text-center space-y-5 animate-in fade-in zoom-in duration-200">
             <div className="w-20 h-20 bg-rose-100 text-rose-600 rounded-3xl mx-auto flex items-center justify-center shadow-inner">
               <ShieldAlert className="w-10 h-10 animate-bounce" />
@@ -158,11 +192,6 @@ export default function App() {
             {activeTab === 'settings' && (
               <Settings 
                 onUpdateCompany={(name) => setCompanyName(name)} 
-              />
-            )}
-            {activeTab === 'admin' && (
-              <AdminPanel 
-                onExitAdmin={() => setActiveTab('dashboard')} 
               />
             )}
           </>

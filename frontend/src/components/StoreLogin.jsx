@@ -37,7 +37,7 @@ export default function StoreLogin({ storeName = 'نظام المحاسب الذ
         setActiveStoreSlug(data.user.slug);
       }
 
-      onLoginSuccess(data.user, data.role);
+      onLoginSuccess(data.user, data.role, data.token);
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
